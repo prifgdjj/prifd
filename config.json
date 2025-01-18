@@ -9,7 +9,14 @@
         "other": true,
         "hentai": false,
         "lavalink": true,
-        "troll": true
+        "troll": true,
+        "levelling" : true,
+        "economy" : true,
+        "application" : true,
+        "birthday" : true,
+        "gaming" : true,
+        "customcommands" : true,
+        "report" : true
     },
     "categories": {
         "anime": true,

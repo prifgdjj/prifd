@@ -201,7 +201,7 @@ module.exports = (client) => {
         client.on('raw', d => client.riffy.updateVoiceState(d));
 
         client.once('ready', () => {
-            console.log('\x1b[35m[ MUSIC 2 ]\x1b[0m', '\x1b[32mLavalink Music System Active ✅\x1b[0m');
+            //console.log('\x1b[35m[ MUSIC 2 ]\x1b[0m', '\x1b[32mLavalink Music System Active ✅\x1b[0m');
             client.riffy.init(client.user.id);
         });
     } else {

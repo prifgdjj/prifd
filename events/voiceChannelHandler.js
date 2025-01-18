@@ -1,9 +1,8 @@
-const { Client, ChannelType, PermissionsBitField, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { Client, ChannelType, PermissionsBitField, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle  } = require('discord.js');
 const { voiceChannelCollection, centralizedControlCollection } = require('../mongodb');
 
 let config = {};
 
-// Function to load configuration from MongoDB
 async function loadConfig() {
     try {
         const voiceChannels = await voiceChannelCollection.find({}).toArray();
@@ -29,7 +28,7 @@ setInterval(async () => {
         const now = Date.now();
         const outdatedChannels = await voiceChannelCollection.find({
             isTemporary: true,
-            createdAt: { $lt: new Date(now - 6 * 60 * 60 * 1000) } 
+            createdAt: { $lt: new Date(now -  6 * 60 * 60 * 1000) } 
         }).toArray();
 
         for (const channel of outdatedChannels) {
@@ -82,44 +81,83 @@ const sendOrUpdateCentralizedEmbed = async (client, guild) => {
     try {
         const existingControl = await centralizedControlCollection.findOne({ guildId: guild.id });
         const embed = new EmbedBuilder()
-            .setTitle('Voice Channel Management')
-            .setDescription('Use the menu below to manage your voice channel.')
+            .setAuthor({ 
+            name: "Voice Channel Manager", 
+            iconURL: "https://cdn.discordapp.com/emojis/1092879273712435262.gif" ,
+             url: "https://discord.gg/"
+            })
+            .setDescription('- Click the buttons below to control your voice channel')
             .setColor('#00FF00')
+            .addFields([
+                {
+                    name: 'Button Usage',
+                    value: `
+                        🔒 — Lock the voice channel  
+                        🔓 — Unlock the voice channel  
+                        👻 — Ghost the voice channel  
+                        ✨ — Reveal the voice channel  
+                        🚩 — Claim the voice channel  
+                        🚫 — Disconnect a members  
+                        🎮 — Start an activity  
+                        ℹ️ — View channel information  
+                        ➕ — Increase the user limit  
+                        ➖ — Decrease the user limit
+                    `
+                }
+                
+            ])
             .setTimestamp();
 
-        const row = new ActionRowBuilder()
+            const row1 = new ActionRowBuilder()
             .addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId('voice_channel_control') 
-                    .setPlaceholder('Select an action')
-                    .addOptions([
-                        { label: 'Make Public', value: 'make_public' },
-                        { label: 'Make Private', value: 'make_private' },
-                        { label: 'Delete Channel', value: 'delete_channel' },
-                        { label: 'Don\'t Delete on Leave', value: 'dont_delete_on_leave' },
-                        { label: 'Edit Channel Name', value: 'edit_channel_name' }
-                    ])
+                new ButtonBuilder().setCustomId('voice_control_lock_channel').setEmoji('🔒').setStyle(ButtonStyle.Secondary), 
+                new ButtonBuilder().setCustomId('voice_control_unlock_channel').setEmoji('🔓').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('voice_control_ghost_channel').setEmoji('👻').setStyle(ButtonStyle.Secondary), 
+                new ButtonBuilder().setCustomId('voice_control_reveal_channel').setEmoji('✨').setStyle(ButtonStyle.Secondary), 
+                new ButtonBuilder().setCustomId('voice_control_claim_channel').setEmoji('🚩').setStyle(ButtonStyle.Secondary) 
+            );
+        
+        const row2 = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder().setCustomId('voice_control_disconnect_member').setEmoji('🚫').setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId('voice_control_start_activity').setEmoji('🎮').setStyle(ButtonStyle.Primary), 
+                new ButtonBuilder().setCustomId('voice_control_view_channel_info').setEmoji('ℹ️').setStyle(ButtonStyle.Primary), 
+                new ButtonBuilder().setCustomId('voice_control_increase_limit').setEmoji('➕').setStyle(ButtonStyle.Primary), 
+                new ButtonBuilder().setCustomId('voice_control_decrease_limit').setEmoji('➖').setStyle(ButtonStyle.Primary) 
             );
 
         if (existingControl) {
             try {
                 const message = await managerChannel.messages.fetch(existingControl.messageId);
-                await message.edit({ embeds: [embed], components: [row] });
+
+             
+                if (message.author.id === client.user.id) {
+                   
+                    await message.edit({ embeds: [embed], components: [row1, row2] });
+                } else {
+                   
+                    await message.delete();
+                    const newMessage = await managerChannel.send({ embeds: [embed], components: [row1, row2] });
+                    await centralizedControlCollection.updateOne(
+                        { guildId: guild.id },
+                        { $set: { messageId: newMessage.id } }
+                    );
+                }
             } catch (fetchError) {
                 if (fetchError.code === 10008) { 
                     console.error(`Message not found for guild ${guild.id}. Removing outdated record.`);
                     await centralizedControlCollection.deleteOne({ guildId: guild.id });
-                    const newMessage = await managerChannel.send({ embeds: [embed], components: [row] });
+                    const newMessage = await managerChannel.send({ embeds: [embed], components: [row1, row2] });
                     await centralizedControlCollection.insertOne({
                         guildId: guild.id,
                         messageId: newMessage.id,
                     });
                 } else {
-                    //console.error(`Error fetching message for guild ${guild.id}:`, fetchError);
+                    console.error(`Error fetching message for guild ${guild.id}:`, fetchError);
                 }
             }
         } else {
-            const newMessage = await managerChannel.send({ embeds: [embed], components: [row] });
+            const newMessage = await managerChannel.send({ embeds: [embed], components: [row1, row2] });
             await centralizedControlCollection.insertOne({
                 guildId: guild.id,
                 messageId: newMessage.id,
@@ -146,7 +184,7 @@ const checkOutdatedCentralizedControls = async (client) => {
             try {
                 await managerChannel.messages.fetch(record.messageId);
             } catch (fetchError) {
-                if (fetchError.code === 10008) { // Message not found
+                if (fetchError.code === 10008) {
                     console.error(`Message not found for guild ${record.guildId}. Removing outdated record.`);
                     await centralizedControlCollection.deleteOne({ guildId: record.guildId });
                     continue;
@@ -161,6 +199,32 @@ const checkOutdatedCentralizedControls = async (client) => {
 };
 
 const handleVoiceStateUpdate = async (client, oldState, newState) => {
+
+    if (oldState.channelId && !newState.channelId) {
+        const oldChannel = oldState.channel;
+
+  
+        const voiceChannel = await voiceChannelCollection.findOne({ channelId: oldChannel.id, isTemporary: true });
+
+        if (voiceChannel) {
+     
+            if (oldChannel.members.size === 0) {
+                try {
+                  
+                    await oldChannel.delete();
+                    //console.log(`Deleted empty voice channel: ${oldChannel.name}`);
+
+                    // Delete the channel record from the MongoDB collection
+                    await voiceChannelCollection.deleteOne({ channelId: oldChannel.id });
+                    //console.log(`Deleted voice channel record from database: ${oldChannel.id}`);
+                } catch (error) {
+                    //console.error(`Error deleting channel or record for channel ${oldChannel.id}:`, error);
+                }
+            }
+        }
+    }
+
+
     if (oldState.channelId === newState.channelId) return;
 
     const guildId = newState.guild.id;
@@ -188,117 +252,153 @@ const handleVoiceStateUpdate = async (client, oldState, newState) => {
                 ]
             });
 
+         
             await member.voice.setChannel(newChannel);
+
+           
             await voiceChannelCollection.insertOne({
                 id: newChannel.id,
                 guildId,
                 channelId: newChannel.id,
-                userId: member.user.id, // Store the creator's user ID
+                userId: member.user.id, 
                 createdAt: new Date(),
                 isTemporary: true
             });
 
+
             deleteChannelAfterTimeout(client, newChannel.id, 6 * 60 * 60 * 1000);
         } catch (error) {
-            console.error('Error creating voice channel:', error);
+            //console.error('Error creating voice channel:', error);
         }
     }
 };
 
-const handleInteraction = async (interaction) => {
-  if (!interaction.isSelectMenu()) return;
 
-  try {
-      const userId = interaction.user.id;
-      const guild = interaction.guild;
+const handleButtonInteraction = async (interaction) => {
 
-      if (!guild) {
-          return interaction.reply({ content: 'Guild not found.', ephemeral: true });
-      }
+    if (!interaction.isButton()) return;
 
-      // Ensure that the interaction is related to voice channel management
-      if (interaction.customId !== 'voice_channel_control') {
-          // Not a voice channel control interaction, so ignore it
-          return;
-      }
+  
+    const PREFIX = 'voice_control_';
 
-      const member = guild.members.cache.get(userId);
-      const currentVoiceChannel = member?.voice.channel;
+ 
+    if (!interaction.customId.startsWith(PREFIX)) return;
 
-      if (!currentVoiceChannel) {
-          return interaction.reply({ content: 'You must be in a voice channel to perform this action.', ephemeral: true });
-      }
+    const guild = interaction.guild;
+    const userId = interaction.user.id;
+    const member = guild.members.cache.get(userId);
+    const currentVoiceChannel = member?.voice.channel;
 
-      const channelId = currentVoiceChannel.id;
-      const voiceChannel = await voiceChannelCollection.findOne({ channelId });
+    if (!currentVoiceChannel) {
+        return interaction.reply({ content: 'You must be in a voice channel to perform this action.', ephemeral: true });
+    }
 
-      if (!voiceChannel) {
-          return interaction.reply({ content: 'This channel is not managed by the bot.', ephemeral: true });
-      }
+    const channelId = currentVoiceChannel.id;
+    const voiceChannel = await voiceChannelCollection.findOne({ channelId });
 
-      // Check if the user is the owner or authorized
-      if (voiceChannel.userId !== userId) {
-          return interaction.reply({ content: 'You do not have permission to manage this channel.', ephemeral: true });
-      }
+    if (!voiceChannel) {
+        return interaction.reply({ content: 'This channel is not managed by the bot.', ephemeral: true });
+    }
 
-      switch (interaction.values[0]) {
-          case 'make_public':
-              await currentVoiceChannel.permissionOverwrites.set([
-                  {
-                      id: guild.roles.everyone,
-                      allow: [PermissionsBitField.Flags.Connect]
-                  }
-              ]);
-              await interaction.reply({ content: 'Your channel is now public.', ephemeral: true });
-              break;
+    if (voiceChannel.userId !== userId) {
+        return interaction.reply({ content: 'You do not have permission to manage this channel.', ephemeral: true });
+    }
 
-          case 'make_private':
-              await currentVoiceChannel.permissionOverwrites.set([
-                  {
-                      id: guild.roles.everyone,
-                      deny: [PermissionsBitField.Flags.Connect]
-                  }
-              ]);
-              await interaction.reply({ content: 'Your channel is now private.', ephemeral: true });
-              break;
+    try {
+      
+        const action = interaction.customId.replace(PREFIX, '');
 
-          case 'delete_channel':
-              await currentVoiceChannel.delete();
-              await voiceChannelCollection.deleteOne({ channelId: currentVoiceChannel.id });
-              await interaction.reply({ content: 'Your channel has been deleted.', ephemeral: true });
-              break;
+        switch (action) {
+            case 'lock_channel':
+                await currentVoiceChannel.permissionOverwrites.set([
+                    {
+                        id: guild.roles.everyone,
+                        deny: [PermissionsBitField.Flags.Connect],
+                    },
+                ]);
+                await interaction.reply({ content: 'Your channel is now locked.', ephemeral: true });
+                break;
 
-          case 'dont_delete_on_leave':
-              await voiceChannelCollection.updateOne({ channelId: currentVoiceChannel.id }, { $set: { isTemporary: false } });
-              await interaction.reply({ content: 'Your channel will not be deleted when you leave.', ephemeral: true });
-              break;
+            case 'unlock_channel':
+                await currentVoiceChannel.permissionOverwrites.set([
+                    {
+                        id: guild.roles.everyone,
+                        allow: [PermissionsBitField.Flags.Connect],
+                    },
+                ]);
+                await interaction.reply({ content: 'Your channel is now unlocked.', ephemeral: true });
+                break;
 
-          case 'edit_channel_name':
-              await interaction.reply({ content: 'Please provide the new name for your channel:', ephemeral: true });
+            case 'ghost_channel':
+                await currentVoiceChannel.permissionOverwrites.set([
+                    {
+                        id: guild.roles.everyone,
+                        deny: [PermissionsBitField.Flags.ViewChannel],
+                    },
+                ]);
+                await interaction.reply({ content: 'Your channel is now ghosted.', ephemeral: true });
+                break;
 
-              const filter = response => response.author.id === userId;
-              const collected = await interaction.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ['time'] }).catch(() => null);
+            case 'reveal_channel':
+                await currentVoiceChannel.permissionOverwrites.set([
+                    {
+                        id: guild.roles.everyone,
+                        allow: [PermissionsBitField.Flags.ViewChannel],
+                    },
+                ]);
+                await interaction.reply({ content: 'Your channel is now revealed.', ephemeral: true });
+                break;
 
-              if (collected) {
-                  const newName = collected.first().content;
-                  await currentVoiceChannel.setName(newName);
+            case 'claim_channel':
+                await interaction.reply({ content: 'You have claimed this channel.', ephemeral: true });
+                break;
 
-                  // Delete the user's message
-                  await collected.first().delete();
+            case 'disconnect_member':
+                if (currentVoiceChannel.members.size > 1) {
+                    const randomMember = currentVoiceChannel.members.random();
+                    await randomMember.voice.disconnect();
+                    await interaction.reply({ content: `${randomMember.user.tag} has been disconnected.`, ephemeral: true });
+                } else {
+                    await interaction.reply({ content: 'No other members to disconnect.', ephemeral: true });
+                }
+                break;
 
-                  await interaction.followUp({ content: `Your channel name has been changed to ${newName}.`, ephemeral: true });
-              } else {
-                  await interaction.followUp({ content: 'You took too long to respond.', ephemeral: true });
-              }
-              break;
+            case 'start_activity':
+                await interaction.reply({ content: 'Starting an activity is currently not supported.', ephemeral: true });
+                break;
 
-          default:
-              await interaction.reply({ content: 'Invalid option selected.', ephemeral: true });
-      }
-  } catch (error) {
-      console.error('Error handling interaction:', error);
-  }
+            case 'view_channel_info':
+                const info = `Channel Name: ${currentVoiceChannel.name}\nChannel ID: ${currentVoiceChannel.id}`;
+                await interaction.reply({ content: info, ephemeral: true });
+                break;
+
+            case 'increase_limit':
+                if (currentVoiceChannel.userLimit < 99) {
+                    await currentVoiceChannel.setUserLimit(currentVoiceChannel.userLimit + 1);
+                    await interaction.reply({ content: 'User limit increased.', ephemeral: true });
+                } else {
+                    await interaction.reply({ content: 'Maximum user limit reached.', ephemeral: true });
+                }
+                break;
+
+            case 'decrease_limit':
+                if (currentVoiceChannel.userLimit > 0) {
+                    await currentVoiceChannel.setUserLimit(currentVoiceChannel.userLimit - 1);
+                    await interaction.reply({ content: 'User limit decreased.', ephemeral: true });
+                } else {
+                    await interaction.reply({ content: 'Minimum user limit reached.', ephemeral: true });
+                }
+                break;
+
+            default:
+                await interaction.reply({ content: 'Invalid button pressed.', ephemeral: true });
+        }
+    } catch (error) {
+        console.error('Error handling button interaction:', error);
+        await interaction.reply({ content: 'An error occurred while processing your request.', ephemeral: true });
+    }
 };
+
 
 
 module.exports = (client) => {
@@ -313,7 +413,13 @@ module.exports = (client) => {
 
     client.on('voiceStateUpdate', (oldState, newState) => handleVoiceStateUpdate(client, oldState, newState));
 
-    client.on('interactionCreate', handleInteraction);
+    client.on('interactionCreate', async (interaction) => {
+        if (interaction.isButton()) {
+            await handleButtonInteraction(interaction);
+        } else {
+            //await handleInteraction(interaction);
+        }
+    });
 };
 
 module.exports.loadConfig = loadConfig;

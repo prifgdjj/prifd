@@ -1,7 +1,7 @@
 const { MongoClient } = require('mongodb');
 const fs = require('fs');
 const path = require('path');
-
+const colors = require('./UI/colors/colors');
 const configPath = path.join(__dirname, 'config.json');
 
 
@@ -14,6 +14,9 @@ const client = new MongoClient(uri);
 async function connectToDatabase() {
     try {
         await client.connect();
+        console.log('\n' + '─'.repeat(40));
+        console.log(`${colors.magenta}${colors.bright}🕸️  DATABASE CONNECTION${colors.reset}`);
+        console.log('─'.repeat(40));
         console.log('\x1b[36m[ DATABASE ]\x1b[0m', '\x1b[32mConnected to MongoDB ✅\x1b[0m');
     } catch (err) {
         console.error("Error connecting to MongoDB", err);
@@ -32,9 +35,20 @@ const serverConfigCollection = db.collection("serverconfig");
 const reactionRolesCollection = db.collection("reactionRoles");
 const antisetupCollection = db.collection("antisetup");
 const anticonfigcollection = db.collection("anticonfiglist")
-//
+const afkCollection = db.collection('afk');
 const giveawayCollection = db.collection("giveaways");
-
+const notificationsCollection = db.collection("notifications");
+const logsCollection = db.collection("logs");
+const nicknameConfigs = db.collection("nicknameConfig");
+const economyCollection = db.collection("economy"); 
+const usersCollection = db.collection('users'); 
+const epicDataCollection = db.collection('epicData');
+const customCommandsCollection = db.collection('customCommands');
+const birthdayCollection = db.collection('birthday'); 
+const applicationCollection = db.collection('applications'); 
+const serverLevelingLogsCollection = db.collection('serverLevelingLogs');
+const commandLogsCollection = db.collection('commandLogs');
+const reportsCollection = db.collection('reports'); 
 async function saveGiveaway(giveaway) {
     await giveawayCollection.updateOne(
         { messageId: giveaway.messageId },
@@ -67,5 +81,18 @@ module.exports = {
     serverConfigCollection,
     reactionRolesCollection,
     antisetupCollection,
-    anticonfigcollection
+    notificationsCollection,
+    anticonfigcollection,
+    afkCollection,
+    logsCollection,
+    nicknameConfigs,
+    usersCollection,
+    epicDataCollection,
+    customCommandsCollection,
+    economyCollection,
+    birthdayCollection,
+    applicationCollection,
+    serverLevelingLogsCollection,
+    commandLogsCollection,
+    reportsCollection,
 };

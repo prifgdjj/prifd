@@ -6,41 +6,46 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('dm')
         .setDescription(lang.dmCommandDescription)
-        .addUserOption(option => 
+        .addUserOption(option =>
             option.setName('target')
                 .setDescription(lang.dmTargetDescription)
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('reason')
                 .setDescription(lang.dmReasonDescription)
-                .setRequired(true)),        
+                .setRequired(true)),
     async execute(interaction) {
-        let sender = interaction.user; 
-        let targetUser;
-        let reason;
-        if (interaction.isCommand && interaction.isCommand()) {
-           
-            targetUser = interaction.options.getUser('target');
-            reason = interaction.options.getString('reason');
-   
-            const dmEmbed = new EmbedBuilder()
-                .setTitle(lang.dmReceivedTitle)
-                .setDescription(lang.dmReceivedDescription.replace('${sender}', sender).replace('${interaction.guild.name}', interaction.guild.name).replace('${reason}', reason))
-                .setColor(0xff0000); 
+        const sender = interaction.user;
+        const targetUser = interaction.options.getUser('target');
+        const reason = interaction.options.getString('reason');
 
+        const dmEmbed = new EmbedBuilder()
+            .setTitle(lang.dmReceivedTitle)
+            .setDescription(
+                lang.dmReceivedDescription
+                    .replace('${sender}', sender.tag)
+                    .replace('${interaction.guild.name}', interaction.guild.name)
+                    .replace('${reason}', reason)
+            )
+            .setColor(0xff0000);
+
+        try {
+         
             await targetUser.send({ embeds: [dmEmbed] });
-        } else {
-            const embed = new EmbedBuilder()
-                .setColor('#3498db')
-                .setAuthor({ 
-                    name: lang.dmAlert, 
-                    iconURL: cmdIcons.dotIcon,
-                    url: "https://discord.gg/xQF9f9yUEM"
-                })
-                .setDescription(lang.dmOnlySlashCommand)
-                .setTimestamp();
 
-            await interaction.reply({ embeds: [embed] });
-        }   
+         
+            await interaction.reply({
+                content: lang.dmSentConfirmation.replace('${targetUser}', targetUser.tag),
+                flags: 64,
+            });
+        } catch (error) {
+            console.error('Error sending DM:', error);
+
+         
+            await interaction.reply({
+                content: lang.dmFailedMessage.replace('${targetUser}', targetUser.tag),
+                flags: 64,
+            });
+        }
     },
 };

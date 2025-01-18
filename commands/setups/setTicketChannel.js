@@ -45,12 +45,12 @@ module.exports = {
         }
 
         const serverOwnerId = interaction.guild.ownerId;
-        const memberId = interaction.user.id;
-        const ownerId = (await ticketsCollection.findOne({ serverId }))?.ownerId;
+        // const memberId = interaction.user.id;
+        // const ownerId = (await ticketsCollection.findOne({ serverId }))?.ownerId;
 
-        if (memberId !== serverOwnerId && memberId !== ownerId) {
-            return interaction.reply({ content: 'Only the server owner or specified owners can use this command.', ephemeral: true });
-        }
+        // if (memberId !== serverOwnerId && memberId !== ownerId) {
+        //     return interaction.reply({ content: 'Only the server owner or specified owners can use this command.', ephemeral: true });
+        // }
 
         await ticketsCollection.updateOne(
             { serverId },

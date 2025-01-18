@@ -3,32 +3,118 @@ require('./bot');
 require('./shiva');
 
 const loadEventHandlers = () => {
-    console.log('\x1b[36m[ WELCOME ]\x1b[0m', '\x1b[32mWelcome System Active ✅\x1b[0m');
+    const colors = require('./UI/colors/colors');
+
+    // Helper function for logging
+    const logSystem = (system, status = '✅') => {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(
+            `${colors.gray}[${timestamp}]${colors.reset}`,
+            `${colors.cyan}[${system.padEnd(15)}]${colors.reset}`,
+            `${colors.green}${status}${colors.reset}`
+        );
+    };
+
+    // Clear console and show startup banner
+    console.clear();
+    
+    // Current Date/Time and User Display
+    const currentDate = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+    // Fancy header
+    console.log('\n' + '═'.repeat(60));
+    console.log(`${colors.yellow}${colors.bright}             🤖 BOT SYSTEMS INITIALIZATION 🤖${colors.reset}`);
+    console.log('═'.repeat(60) + '\n');
+
+    // Core Systems
+    console.log(`\n${colors.magenta}${colors.bright}📡 CORE SYSTEMS${colors.reset}`);
+    console.log('─'.repeat(40));
+    
+    // Welcome System
     const guildMemberAddHandler = require('./events/guildMemberAdd');
     guildMemberAddHandler(client);
-    console.log('\x1b[36m[ TICKET ]\x1b[0m', '\x1b[32mTicket System Active ✅\x1b[0m');
+    logSystem('WELCOME');
+
+    // Ticket System
     const ticketHandler = require('./events/ticketHandler');
     ticketHandler(client);
-    console.log('\x1b[36m[ VOICE CHANNEL ]\x1b[0m', '\x1b[32mVoice Channel System Active ✅\x1b[0m');
+    logSystem('TICKET');
+
+    // Voice Channel System
     const voiceChannelHandler = require('./events/voiceChannelHandler');
     voiceChannelHandler(client);
-    console.log('\x1b[36m[ GIVEAWAY ]\x1b[0m', '\x1b[32mGiveaway System Active ✅\x1b[0m');
+    logSystem('VOICE');
+
+    console.log(`\n${colors.magenta}${colors.bright}🎮 ENGAGEMENT SYSTEMS${colors.reset}`);
+    console.log('─'.repeat(40));
+
+    // Giveaway System
     const giveawayHandler = require('./events/giveaway');
     giveawayHandler(client);
-    console.log('\x1b[36m[ AUTOROLE ]\x1b[0m', '\x1b[32mAutorole System Active ✅\x1b[0m');
+    logSystem('GIVEAWAY');
+
+    // Role Systems
     const autoroleHandler = require('./events/autorole');
     autoroleHandler(client);
-    console.log('\x1b[36m[ REACTION ROLES ]\x1b[0m', '\x1b[32mReaction Roles System Active ✅\x1b[0m');
+    logSystem('AUTOROLE');
+
     const reactionRoleHandler = require('./events/reactionroles');
     reactionRoleHandler(client);
+    logSystem('REACTION ROLES');
+
+    console.log(`\n${colors.magenta}${colors.bright}😀 EMOJI & AFK SYSTEMS${colors.reset}`);
+    console.log('─'.repeat(40));
+
+    // Emoji Systems
     const nqnHandler = require('./events/nqn');
     nqnHandler(client);
     const emojiHandler = require('./events/emojiHandler');
-    console.log('\x1b[36m[ NQN Module ]\x1b[0m', '\x1b[32mEmoji System Active ✅\x1b[0m');
     emojiHandler(client);
-    require('./events/music')(client);
-    require('./shiva');
-};
+    logSystem('NQN');
+    logSystem('EMOJI');
+    
+    // AFK System
+    const afkHandler = require('./events/afkHandler');
+    afkHandler(client);
+    logSystem('AFK');
 
+    console.log(`\n${colors.magenta}${colors.bright}🔔 NOTIFICATION SYSTEMS${colors.reset}`);
+    console.log('─'.repeat(40));
+
+    // Social Media Notifications
+    const startYouTubeNotifications = require('./events/youTubeHandler');
+    const startTwitchNotifications = require('./events/twitchHandler');
+    const startFacebookNotifications = require('./events/facebookHandler');
+    const startInstagramNotifications = require('./events/instagramHandler');
+
+    startYouTubeNotifications(client);
+    logSystem('YOUTUBE');
+    
+    startTwitchNotifications(client);
+    logSystem('TWITCH');
+    
+    startFacebookNotifications(client);
+    logSystem('FACEBOOK');
+    
+    startInstagramNotifications(client);
+    logSystem('INSTAGRAM');
+
+    // Music System
+    console.log(`\n${colors.magenta}${colors.bright}🎵 MUSIC SYSTEM${colors.reset}`);
+    console.log('─'.repeat(40));
+    require('./events/music')(client);
+    logSystem('LAVALINK MUSIC');
+
+    require('./shiva');
+
+    // Footer
+    console.log('\n' + '═'.repeat(60));
+    console.log(`${colors.green}${colors.bright}             ✨ ALL SYSTEMS INITIALIZED ✨${colors.reset}`);
+    console.log('═'.repeat(60) + '\n');
+
+    // Final status
+    console.log(`${colors.green}${colors.bright}Status: ${colors.reset}${colors.green}All systems operational${colors.reset}`);
+    console.log(`${colors.gray}Last checked: ${colors.reset}${colors.cyan}${new Date().toLocaleTimeString()}${colors.reset}\n`);
+};
 
 loadEventHandlers();

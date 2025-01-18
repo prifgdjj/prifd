@@ -29,7 +29,7 @@ module.exports = {
         } catch (error) {
             console.error('Error fetching quote:', error);
             const embed = new EmbedBuilder()
-                .setColor('#ff0000')
+                .setColor(0x0000FF)
                 .setTitle(quoteFallbackTitle)
                 .setDescription(`**"${fallbackQuote.text}"**\n\n— *${fallbackQuote.author}*`)
                 .setTimestamp();
@@ -52,7 +52,7 @@ module.exports = {
             const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
             const embed = new EmbedBuilder()
-                .setColor('#0099ff')
+                .setColor(0x0000FF)
                 .setTitle(quoteTitle)
                 .setDescription(`**"${randomQuote.text}"**\n\n— *${randomQuote.author || 'Unknown'}*`)
                 .setTimestamp();
@@ -61,7 +61,7 @@ module.exports = {
         } catch (error) {
             console.error('Error fetching quote:', error);
             const embed = new EmbedBuilder()
-                .setColor('#ff0000')
+                .setColor(0x0000FF)
                 .setTitle(quoteFallbackTitle)
                 .setDescription(`**"${fallbackQuote.text}"**\n\n— *${fallbackQuote.author}*`)
                 .setTimestamp();

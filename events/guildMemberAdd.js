@@ -11,7 +11,6 @@ async function loadWelcomeConfig() {
             return acc;
         }, {});
     } catch (err) {
-        //console.error('Error loading welcome config:', err);
         return {};
     }
 }
@@ -37,6 +36,10 @@ function getRandomImage(images) {
     return images[Math.floor(Math.random() * images.length)];
 }
 
+function truncateUsername(username, maxLength = 15) {
+    return username.length > maxLength ? `${username.slice(0, maxLength)}...` : username;
+}
+
 module.exports = async (client) => {
     let welcomeConfig = await loadWelcomeConfig();
 
@@ -53,28 +56,30 @@ module.exports = async (client) => {
             if (welcomeChannel) {
                 const memberCount = member.guild.memberCount;
                 const suffix = getOrdinalSuffix(memberCount);
-                const userName = member.user.username;
+                const userName = truncateUsername(member.user.username);
                 const joinDate = member.joinedAt.toDateString();
                 const creationDate = member.user.createdAt.toDateString();
-                const serverName = member.guild.name;
                 const serverIcon = member.guild.iconURL({ format: 'png', dynamic: true, size: 256 });
                 const randomImage = getRandomImage(data.welcomeImages);
+                
+                // Keep the title short and sweet
+                const shortTitle = `Welcome ${memberCount}${suffix} Member!`;
 
                 const welcomecard = new Wcard()
                     .setName(userName)
                     .setAvatar(member.user.displayAvatarURL({ format: 'png' }))
-                    .setTitle("Welcome to Server")
-                    .setColor("00e5ff") 
+                    .setTitle(shortTitle) // Fits within 15 characters
+                    .setColor("00e5ff")
                     .setBackground(randomImage);
-                
+
                 const card = await welcomecard.build();
                 const attachment = new AttachmentBuilder(card, { name: 'welcome.png' });
 
                 const embed = new EmbedBuilder()
-                    .setTitle("Welcome to the Server!")
-                    .setDescription(`${member}! You are the **${memberCount}${suffix}** member of our server!`)
+                    .setTitle("Welcome!")
+                    .setDescription(`${member}, You are the **${memberCount}${suffix}** member of our server!`)
                     .setColor("#00e5ff")
-                    .setThumbnail(member.user.displayAvatarURL())
+                    .setThumbnail(serverIcon)
                     .setImage('attachment://welcome.png')
                     .addFields(
                         { name: 'Username', value: userName, inline: true },
@@ -82,7 +87,7 @@ module.exports = async (client) => {
                         { name: 'Account Created', value: creationDate, inline: true }
                     )
                     .setFooter({ text: "We're glad to have you here!", iconURL: serverIcon })
-                    .setAuthor({ name: serverName, iconURL: serverIcon })
+                    .setAuthor({ name: userName, iconURL: member.user.displayAvatarURL() })
                     .setTimestamp();
 
                 welcomeChannel.send({

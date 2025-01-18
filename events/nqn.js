@@ -75,7 +75,7 @@ module.exports = async (client) => {
     });
 
     client.on('ready', () => {
-        console.log('\x1b[36m[ NQN ]\x1b[0m', '\x1b[32mNQN Module Active ✅\x1b[0m');
+        //console.log('\x1b[36m[ NQN ]\x1b[0m', '\x1b[32mNQN Module Active ✅\x1b[0m');
     });
 
     client.on('error', (error) => {

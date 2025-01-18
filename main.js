@@ -9,9 +9,10 @@ const { SpotifyPlugin } = require('@distube/spotify');
 const { SoundCloudPlugin } = require('@distube/soundcloud');
 const {  Dynamic } = require('musicard'); 
 const config = require('./config.json');
-const { printWatermark } = require('./events/handler');
-const { EmbedBuilder } = require('@discordjs/builders');
 const musicIcons = require('./UI/icons/musicicons'); 
+const colors = require('./UI/colors/colors');
+const loadLogHandlers = require('./logHandlers');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const client = new Client({
     intents: Object.keys(GatewayIntentBits).map((a) => {
       return GatewayIntentBits[a];
@@ -29,8 +30,12 @@ let totalCommands = 0;
 
 const commands = [];
 const logDetails = []; 
-printWatermark();
-console.log('\x1b[33m%s\x1b[0m', '┌───────────────────────────────────────────┐');
+
+
+const maxWidth = 45; 
+
+console.log(`${colors.yellow}┌${'─'.repeat(maxWidth)}┐${colors.reset}`);
+
 for (const folder of commandFolders) {
     const commandFiles = fs.readdirSync(path.join(commandsPath, folder)).filter(file => file.endsWith('.js'));
     const numCommands = commandFiles.length;
@@ -42,14 +47,26 @@ for (const folder of commandFolders) {
         commands.push(command.data.toJSON());
     }
 
-    const folderDetails = `Folder: ${folder}, Number of commands: ${numCommands}`;
-    logDetails.push(folderDetails);
-    console.log('\x1b[33m%s\x1b[0m', `│ ${folderDetails.padEnd(34)} `);
-    totalCommands += numCommands; 
+    
+    const folderName = `${colors.cyan}${folder}${colors.reset}`;
+    const commandCount = `${colors.green}[${numCommands}]${colors.reset}`;
+    const dotsCount = maxWidth - folder.length - numCommands.toString().length - 4; 
+    const dots = `${colors.dim}${'.'.repeat(dotsCount)}${colors.reset}`;
+    
+    console.log(`${colors.yellow}│${colors.reset} ${folderName}${dots}${commandCount} ${colors.yellow}│${colors.reset}`);
+    totalCommands += numCommands;
 }
-console.log('\x1b[35m%s\x1b[0m', `│ Total number of commands: ${totalCommands}`);
-console.log('\x1b[33m%s\x1b[0m', '└───────────────────────────────────────────┘');
 
+
+console.log(`${colors.yellow}├${'─'.repeat(maxWidth)}┤${colors.reset}`);
+
+
+const totalLine = `Total Commands`;
+const dotsCount = maxWidth - totalLine.length - totalCommands.toString().length - 4;
+const dots = `${colors.dim}${'.'.repeat(dotsCount)}${colors.reset}`;
+console.log(`${colors.yellow}│${colors.reset} ${colors.bright}${totalLine}${colors.reset}${dots}${colors.magenta}[${totalCommands}]${colors.reset} ${colors.yellow}│${colors.reset}`);
+
+console.log(`${colors.yellow}└${'─'.repeat(maxWidth)}┘${colors.reset}\n`);
 
 
 const eventsPath = path.join(__dirname, 'events');
@@ -77,25 +94,36 @@ async function fetchExpectedCommandsCount() {
 }
 
 async function verifyCommandsCount() {
+   
+    console.log('\n' + '─'.repeat(60));
+    console.log(`${colors.yellow}${colors.bright}             🔍 VERIFICATION 🔍${colors.reset}`);
+    console.log('─'.repeat(60));
+
     const expectedCommandsCount = await fetchExpectedCommandsCount();
     const registeredCommandsCount = client.commands.size;
 
+   
     if (expectedCommandsCount === -1) {
-        console.log('\x1b[33m[ WARNING ]\x1b[0m', '\x1b[32mUnbale to verify commands [ SERVER OFFLINE ]\x1b[0m');
+        console.log(`${colors.yellow}[ WARNING ]${colors.reset} ${colors.red}Server Status: OFFLINE ❌${colors.reset}`);
+        console.log(`${colors.yellow}[ WARNING ]${colors.reset} ${colors.red}Unable to verify commands${colors.reset}`);
         return;
     }
 
+    
     if (registeredCommandsCount !== expectedCommandsCount) {
-        console.log(
-            '\x1b[33m[ WARNING ]\x1b[0m \x1b[32mWarning: Bot commands count (%d) does not match expected count (%d).\x1b[0m',
-            registeredCommandsCount,
-            expectedCommandsCount
-        );
+        console.log(`${colors.yellow}[ WARNING ]${colors.reset} ${colors.red}Commands Mismatch Detected ⚠️${colors.reset}`);
+        console.log(`${colors.yellow}[ DETAILS ]${colors.reset} ${colors.red}Current Commands: ${colors.reset}${registeredCommandsCount}`);
+        console.log(`${colors.yellow}[ DETAILS ]${colors.reset} ${colors.red}Expected Commands: ${colors.reset}${expectedCommandsCount}`);
+        console.log(`${colors.yellow}[ STATUS  ]${colors.reset} ${colors.red}Action Required: Please verify command integrity${colors.reset}`);
     } else {
-        console.log('\x1b[36m[ COMMANDS ]\x1b[0m', '\x1b[32mCommand count matched Bot is Secured ✅\x1b[0m');
+        console.log(`${colors.cyan}[ COMMANDS ]${colors.reset} ${colors.green}Command Count: ${registeredCommandsCount} ✓${colors.reset}`);
+        console.log(`${colors.cyan}[ SECURITY ]${colors.reset} ${colors.green}Command Integrity Verified ✅${colors.reset}`);
+        console.log(`${colors.cyan}[ STATUS   ]${colors.reset} ${colors.green}Bot is Secured and Ready 🛡️${colors.reset}`);
     }
-}
 
+    // Footer
+    console.log('─'.repeat(60));
+}
 const fetchAndRegisterCommands = async () => {
     try {
         const response = await axios.get('https://server-backend-tdpa.onrender.com/api/commands');
@@ -147,12 +175,23 @@ const antiRaid = require('./antimodules/antiRaid');
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 client.once('ready', async () => {
-    console.log(`\x1b[31m[ CORE ]\x1b[0m \x1b[32mBot Name:  \x1b[0m${client.user.tag}`);
-    console.log(`\x1b[31m[ CORE ]\x1b[0m \x1b[32mClient ID: \x1b[0m${client.user.id}`);
+    console.log('\n' + '─'.repeat(40));
+    console.log(`${colors.magenta}${colors.bright}👾  BOT INFORMATION${colors.reset}`);
+    console.log('─'.repeat(40));
+    console.log(`${colors.red}[ CORE ]${colors.reset} ${colors.green}Bot Name:  ${colors.reset}${client.user.tag}`);
+    console.log(`${colors.red}[ CORE ]${colors.reset} ${colors.green}Client ID: ${colors.reset}${client.user.id}`);
+
+   
+    console.log('\n' + '─'.repeat(40));
+    console.log(`${colors.red}${colors.bright}🛡️  SECURITY SYSTEMS${colors.reset}`);
+    console.log('─'.repeat(40));
+    
     antiSpam(client);
     antiLink(client);
     antiNuke(client);
     antiRaid(client);
+    loadLogHandlers(client);
+
     try {
         await verifyCommandsCount();
         await fetchAndRegisterCommands();
@@ -160,24 +199,29 @@ client.once('ready', async () => {
             Routes.applicationCommands(client.user.id)
         );
 
- 
+        console.log('\n' + '─'.repeat(40));
+        console.log(`${colors.yellow}${colors.bright}⚡ SLASH COMMANDS${colors.reset}`);
+        console.log('─'.repeat(40));
+
         if (registeredCommands.length !== commands.length) {
-            console.log('\x1b[31m[ LOADER ]\x1b[0m \x1b[32mLoading Slash Commands 🛠️\x1b[0m');
+            console.log(`${colors.red}[ LOADER ]${colors.reset} ${colors.green}Loading Slash Commands 🛠️${colors.reset}`);
 
             await rest.put(
                 Routes.applicationCommands(client.user.id),
                 { body: commands }
             );
 
-            console.log('\x1b[31m[ LOADER ]\x1b[0m \x1b[32mSuccessfully Loaded Slash commands for all Servers ✅\x1b[0m');
+            console.log(`${colors.red}[ LOADER ]${colors.reset} ${colors.green}Successfully Loaded Slash Commands ✅${colors.reset}`);
         } else {
-            console.log('\x1b[31m[ LOADER ]\x1b[0m \x1b[32mSlash commands are already up to date ✅\x1b[0m');
+            console.log(`${colors.red}[ LOADER ]${colors.reset} ${colors.green}Slash Commands Up To Date ✅${colors.reset}`);
         }
 
     } catch (error) {
-        console.error('\x1b[31m[ERROR]\x1b[0m', error);
+        console.log(`${colors.red}[ ERROR ]${colors.reset} ${colors.red}${error}${colors.reset}`);
     }
 });
+
+
 const { connectToDatabase } = require('./mongodb');
 
 connectToDatabase().then(() => {
@@ -292,6 +336,147 @@ client.distube
     }
 
 
+    const { getActiveApplication } = require('./models/applications'); 
+
+    client.on('interactionCreate', async (interaction) => {
+        if (interaction.isButton() && interaction.customId === 'open_application_modal') {
+            const app = await getActiveApplication(interaction.guild.id);
+            if (!app) return interaction.reply({ content: 'Active application not found for this server.', ephemeral: true });
+    
+            const modal = new ModalBuilder()
+                .setCustomId('application_form')
+                .setTitle('Application Form');
+    
+            app.questions.forEach((question, index) => {
+                const textInput = new TextInputBuilder()
+                    .setCustomId(`question_${index}`)
+                    .setLabel(question)
+                    .setStyle(TextInputStyle.Short);
+    
+                modal.addComponents(new ActionRowBuilder().addComponents(textInput));
+            });
+    
+            await interaction.showModal(modal);
+        } else if (interaction.isModalSubmit() && interaction.customId === 'application_form') {
+            const app = await getActiveApplication(interaction.guild.id);
+            if (!app) return interaction.reply({ content: 'Active application not found for this server.', ephemeral: true });
+    
+            const answers = app.questions.map((_, index) => interaction.fields.getTextInputValue(`question_${index}`));
+            const responseChannel = interaction.guild.channels.cache.get(app.responseChannel);
+    
+            if (!responseChannel) {
+                return interaction.reply({ content: 'Response channel not found.', ephemeral: true });
+            }
+    
+            const embed = new EmbedBuilder()
+                .setTitle('New Application Submission')
+                .setDescription(answers.map((answer, index) => `**Q${index + 1}**: ${answer}`).join('\n'))
+                .setColor('Blue')
+                .setFooter({ text: `Submitted by: ${interaction.user.id}` });
+    
+            const buttons = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('accept_application').setLabel('Accept').setStyle(ButtonStyle.Success),
+                new ButtonBuilder().setCustomId('deny_application').setLabel('Deny').setStyle(ButtonStyle.Danger)
+            );
+    
+            await responseChannel.send({ embeds: [embed], components: [buttons] });
+            interaction.reply({ content: 'Your application has been submitted!', ephemeral: true });
+        } else if (interaction.isButton() && (interaction.customId === 'accept_application' || interaction.customId === 'deny_application')) {
+           
+            await interaction.deferReply({ ephemeral: true });
+    
+            const embed = interaction.message.embeds[0];
+            const userId = embed.footer?.text.split('Submitted by: ')[1]; 
+    
+            if (!userId) {
+                return interaction.followUp({ content: 'Could not find the user who submitted the application.', ephemeral: true });
+            }
+    
+            const status = interaction.customId === 'accept_application' ? 'accepted' : 'denied';
+            const color = status === 'accepted' ? 'Green' : 'Red';
+    
+      
+            const updatedEmbed = EmbedBuilder.from(embed)
+                .setColor(color);
+    
+            await interaction.editReply({ embeds: [updatedEmbed], components: [] });
+    
+            try {
+                const user = await interaction.guild.members.fetch(userId);
+                const dmEmbed = new EmbedBuilder()
+                    .setTitle(`Your Application Has Been ${status.charAt(0).toUpperCase() + status.slice(1)}`)
+                    .setDescription(`Your application to **${interaction.guild.name}** has been **${status}**.`)
+                    .addFields(
+                        { name: 'Decision Time', value: new Date().toLocaleString(), inline: true },
+                        { name: 'Status', value: status.charAt(0).toUpperCase() + status.slice(1), inline: true }
+                    )
+                    .setColor(color);
+    
+                await user.send({ embeds: [dmEmbed] });
+                interaction.followUp({ content: `The user has been notified that their application was ${status}.`, ephemeral: true });
+            } catch (error) {
+                interaction.followUp({ content: `Failed to send a DM to the user.`, ephemeral: true });
+            }
+        }
+    });
+    
+    const cron = require('node-cron');
+    const { getEconomyProfile, updateBills, handleEviction, updateWallet } = require('./models/economy');
+    const economyCollection = require('./mongodb');
+    
+    
+    async function checkAndProcessBills() {
+        const allProfiles = await economyCollection.find({}).toArray();
+    
+        for (const profile of allProfiles) {
+            const userId = profile.userId;
+            const user = await client.users.fetch(userId);
+            
+            const now = Date.now();
+            const overdueRent = profile.bills.unpaidRent > 0 && now > profile.bills.rentDueDate;
+            const overdueUtilities = profile.bills.unpaidUtilities > 0 && now > profile.bills.utilitiesDueDate;
+    
+        
+            const totalOverdue = overdueRent ? profile.bills.unpaidRent : 0;
+            if (overdueRent || overdueUtilities) {
+               
+                const embed = new EmbedBuilder()
+                    .setTitle('Overdue Bills Warning')
+                    .setDescription(`You have overdue bills. Total Due: $${totalOverdue}. Please pay to avoid eviction.`)
+                    .setColor('#FFA500');
+                user.send({ embeds: [embed] });
+    
+                if (now - profile.bills.rentDueDate > 7 * 24 * 60 * 60 * 1000) { 
+                  
+                    if (profile.wallet >= totalOverdue) {
+                        await updateWallet(userId, -totalOverdue);
+                        await updateBills(userId, { unpaidRent: 0, rentDueDate: now + 30 * 24 * 60 * 60 * 1000 });
+                        
+                        const paymentEmbed = new EmbedBuilder()
+                            .setTitle('Bills Paid Automatically')
+                            .setDescription(`We have deducted $${totalOverdue} from your wallet to cover overdue bills.`)
+                            .setColor('#00FF00');
+                        user.send({ embeds: [paymentEmbed] });
+                    } else {
+                        await handleEviction(userId);
+                        const evictionEmbed = new EmbedBuilder()
+                            .setTitle('Eviction Notice')
+                            .setDescription('You have been evicted due to unpaid bills.')
+                            .setColor('#FF0000');
+                        user.send({ embeds: [evictionEmbed] });
+                    }
+                }
+            }
+        }
+    }
+    
+    
+    cron.schedule('0 0 * * *', () => {
+        console.log('Running daily bill check...');
+        checkAndProcessBills();
+    });
+
+    
 const express = require("express");
 const app = express();
 const port = 3000;
