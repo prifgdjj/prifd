@@ -30,11 +30,10 @@
      "lavalink": {
         "lavalink": {
             {
-              "identifier": "Catfein DE",
-              "password": "catfein",
-              "host": "lavalink.alfari.id",
-              "port": 443,
-              "secure": true
+              "host": "lava.catfein.com",
+              "port": 4000,
+               "password": "catfein",
+              "secure": false
 }
         }
     }, 
