@@ -29,10 +29,13 @@
     },
      "lavalink": {
         "lavalink": {
-            "host": "lava.catfein.com",
-            "port": 4000,
-            "password": "catfein",
-            "secure": false
+            {
+              "identifier": "Catfein DE",
+              "password": "catfein",
+              "host": "lavalink.alfari.id",
+              "port": 443,
+              "secure": true
+}
         }
     }, 
     "spotifyClientId": "f71a3da30e254962965ca2a89d6f74b9",
