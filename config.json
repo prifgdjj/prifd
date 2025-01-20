@@ -1,3 +1,4 @@
+
 {
     "token": "",
     "language": "en",
@@ -7,7 +8,7 @@
     "excessCommands": {
         "utility": true,
         "other": true,
-        "hentai": false,
+        "hentai": true,
         "lavalink": true,
         "troll": true,
         "levelling" : true,
@@ -29,12 +30,10 @@
     },
      "lavalink": {
         "lavalink": {
-            {
-              "host": "lava.catfein.com",
-              "port": 4000,
-               "password": "catfein",
-              "secure": false
-}
+            "host": "lava.catfein.com",
+            "port": 4000,
+            "password": "catfein",
+            "secure": false
         }
     }, 
     "spotifyClientId": "f71a3da30e254962965ca2a89d6f74b9",
